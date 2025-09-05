@@ -1,0 +1,104 @@
+/* Custom styles for react-datepicker */
+.date-picker-wrapper {
+  width: 100%;
+}
+
+.date-picker-wrapper .react-datepicker__input-container {
+  width: 100%;
+}
+
+.date-picker-wrapper .react-datepicker__input-container input {
+  width: 100% !important;
+  padding: 10px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.react-datepicker {
+  font-family: Arial, sans-serif !important;
+  border: 1px solid #ddd !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.react-datepicker__header {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #ddd !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.react-datepicker__current-month {
+  color: #333 !important;
+  font-weight: bold !important;
+  line-height: 30px !important;
+  margin: 8px 0 !important;
+  padding: 0 40px !important;
+  text-align: center !important;
+}
+
+.react-datepicker__day-name {
+  color: #666 !important;
+  font-weight: bold !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #e3f2fd !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: #007bff !important;
+  color: white !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__day--today {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__navigation {
+  top: 16px !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important;
+  transition: background-color 0.2s !important;
+}
+
+.react-datepicker__navigation:hover {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.react-datepicker__navigation--previous {
+  left: 8px !important;
+}
+
+.react-datepicker__navigation--next {
+  right: 8px !important;
+}
+
+/* Weather dropdown to unfold upwards */
+.weather-dropdown-upward {
+  position: relative;
+}
+
+.weather-dropdown-upward:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* Use CSS to position dropdown options above */
+.weather-dropdown-upward option {
+  direction: ltr;
+  text-align: left;
+}
