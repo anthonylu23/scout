@@ -36,6 +36,7 @@ const AnnotationToolbar = ({
   if (!isExpanded) {
     return (
       <button
+        data-ui="annotation-toolbar"
         onClick={() => setIsExpanded(true)}
         onWheel={(e) => e.stopPropagation()}
         style={{
@@ -62,6 +63,7 @@ const AnnotationToolbar = ({
 
   return (
     <div 
+      data-ui="annotation-toolbar"
       style={{
         position: 'absolute',
         top: '80px',

@@ -215,8 +215,9 @@ const MapView = () => {
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+    <div id="map-root" style={{ width: '100%', height: '100vh', position: 'relative' }}>
       <div 
+        data-ui="search"
         style={{
           position: 'absolute',
           top: '80px',
@@ -291,6 +292,7 @@ const MapView = () => {
         mapboxAccessToken={process.env.REACT_APP_MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
+        preserveDrawingBuffer={true}
         dragRotate={false}
         pitchWithRotate={false}
         touchRotate={false}
@@ -319,6 +321,7 @@ const MapView = () => {
               zIndex: 999,
               pointerEvents: 'auto'
             }}
+            data-annotation="pin"
           >
             <div
               style={{
@@ -358,6 +361,7 @@ const MapView = () => {
               pointerEvents: 'none',
               zIndex: 998
             }}
+            data-annotation="path"
           >
             <path
               d={pathData}
@@ -394,6 +398,7 @@ const MapView = () => {
               pointerEvents: 'none',
               zIndex: 999
             }}
+            data-annotation="path-preview"
           >
             <path
               d={pathData}
@@ -439,7 +444,7 @@ const MapView = () => {
         );
       })()}
 
-      <div style={{
+      <div data-ui="camera-controls" style={{
         position: 'absolute',
         bottom: '20px',
         left: '50%',

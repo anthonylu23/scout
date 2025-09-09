@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DatePickerStyles.css';
+import { postPreviewRequest } from './api';
+import html2canvas from 'html2canvas';
 
 const CameraControls = ({ onControlsChange }) => {
   const [timeOfDay, setTimeOfDay] = useState(12); // 24-hour format
@@ -9,6 +11,7 @@ const CameraControls = ({ onControlsChange }) => {
   const [focalLength, setFocalLength] = useState(50);
   const [weather, setWeather] = useState('clear');
   const [isWeatherDropdownOpen, setIsWeatherDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dropdownRef = useRef(null);
 
   const weatherOptions = [
@@ -261,12 +264,90 @@ const CameraControls = ({ onControlsChange }) => {
               }}
             />
             <button
-              onClick={() => console.log('Preview clicked with focal length:', focalLength)}
+              onClick={async () => {
+                try {
+                  setIsSubmitting(true);
+                  let screenshot = null;
+                  try {
+                    const container = document.getElementById('map-root');
+                    const mapContainer = container ? container.querySelector('.mapboxgl-map') : null;
+                    const mapCanvas = mapContainer ? mapContainer.querySelector('canvas') : null;
+
+                    // Prefer cloning the whole map-root so annotations overlay are included.
+                    if (container) {
+                      let mapDataUrl = null;
+                      try {
+                        if (mapCanvas) {
+                          mapDataUrl = mapCanvas.toDataURL('image/png');
+                        }
+                      } catch (_) {}
+
+                      const canvas = await html2canvas(container, {
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        scale: window.devicePixelRatio || 1,
+                        onclone: (clonedDoc) => {
+                          // Hide UI panels in cloned DOM
+                          clonedDoc.querySelectorAll('[data-ui]').forEach((el) => {
+                            el.style.display = 'none';
+                          });
+                          // Replace cloned map canvas with image to ensure serialization
+                          try {
+                            if (!mapDataUrl) return;
+                            const clonedContainer = clonedDoc.getElementById('map-root');
+                            const clonedMapCanvas = clonedContainer ? clonedContainer.querySelector('.mapboxgl-map canvas') : null;
+                            if (!clonedMapCanvas) return;
+                            const img = clonedDoc.createElement('img');
+                            img.src = mapDataUrl;
+                            img.style.width = clonedMapCanvas.style.width || `${clonedMapCanvas.width}px`;
+                            img.style.height = clonedMapCanvas.style.height || `${clonedMapCanvas.height}px`;
+                            img.style.position = clonedMapCanvas.style.position || 'absolute';
+                            img.style.top = clonedMapCanvas.style.top || '0px';
+                            img.style.left = clonedMapCanvas.style.left || '0px';
+                            clonedMapCanvas.replaceWith(img);
+                          } catch (_) {}
+                        }
+                      });
+                      screenshot = canvas.toDataURL('image/png');
+                    }
+                  } catch (sErr) {
+                    console.error('Screenshot capture failed:', sErr);
+                  }
+
+                  const payload = {
+                    screenshot,
+                    cameraSettings: {
+                      date: selectedDate.toISOString().split('T')[0],
+                      timeOfDay: String(timeOfDay),
+                      focalLength: focalLength,
+                      weather: weather
+                    }
+                  };
+                  const response = await postPreviewRequest(payload);
+                  console.log('Preview request sent:', response.data);
+                  if (screenshot) {
+                    try {
+                      const a = document.createElement('a');
+                      a.href = screenshot;
+                      a.download = `scout-preview-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                    } catch (dErr) {
+                      console.warn('Screenshot download failed:', dErr);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Failed to send preview request:', error);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#28a745',
+                backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
                 color: 'white',
-                border: '1px solid #28a745',
+                border: `1px solid ${isSubmitting ? '#6c757d' : '#28a745'}`,
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontSize: '13px',
@@ -276,19 +357,22 @@ const CameraControls = ({ onControlsChange }) => {
                 transition: 'all 0.2s'
               }}
               onMouseEnter={(e) => {
+                if (isSubmitting) return;
                 e.target.style.backgroundColor = '#218838';
                 e.target.style.borderColor = '#218838';
                 e.target.style.transform = 'translateY(-1px)';
                 e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
               }}
               onMouseLeave={(e) => {
+                if (isSubmitting) return;
                 e.target.style.backgroundColor = '#28a745';
                 e.target.style.borderColor = '#28a745';
                 e.target.style.transform = 'translateY(0px)';
                 e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
               }}
+              disabled={isSubmitting}
             >
-              Preview
+              {isSubmitting ? 'Sending…' : 'Preview'}
             </button>
           </div>
         </div>
