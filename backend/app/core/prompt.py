@@ -1,14 +1,12 @@
+prompt = """Based on this image of an annotated map, generate a realistic photographic preview of this location with the following specifications:
 
-prompt = """Based on this map screenshot, generate a realistic photographic preview of this location with the following specifications:
-
-Screenshot in base64 format: {screenshot}
 Date: {date}
 Time of Day: {time_of_day}:00 (24-hour format)
 Camera Focal Length: {focal_length}mm
 Weather Conditions: {weather}
 
 Please create a high-quality, realistic image that:
-- Shows the actual geographic location from the map
+- Shows the actual geographic location from the map, that's specified by the annotations
 - Reflects the lighting conditions for {time_of_day}:00 hours
 - Incorporates {weather} weather conditions
 - Uses a {focal_length}mm focal length perspective

@@ -8,4 +8,8 @@ PROJECT_PLAN.md
 
 .claude
 
-backend/.env.example
+config.py
+
+sandbox.py
+
+prompt_test.py
