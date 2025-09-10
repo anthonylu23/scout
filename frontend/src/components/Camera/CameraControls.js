@@ -2,12 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../styles/DatePickerStyles.css';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { uploadScreenshot } from '../../services/api';
 import html2canvas from 'html2canvas';
 
 const CameraControls = ({ onControlsChange }) => {
   const [timeOfDay, setTimeOfDay] = useState(12); // 24-hour format
   const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const renderStatusMessage = (message, type) => {
+    if (type === 'success') {
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <FaCheckCircle style={{ color: '#28a745' }} />
+          {message}
+        </span>
+      );
+    } else if (type === 'error') {
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <FaTimesCircle style={{ color: '#dc3545' }} />
+          {message}
+        </span>
+      );
+    }
+    return message;
+  };
   const [focalLength, setFocalLength] = useState(50);
   const [weather, setWeather] = useState('clear');
   const [isWeatherDropdownOpen, setIsWeatherDropdownOpen] = useState(false);
@@ -53,7 +73,7 @@ const CameraControls = ({ onControlsChange }) => {
             type: 'image/jpeg',
             lastModified: Date.now()
           });
-          console.log(`✅ Created compressed file: ${file.name} (${file.size} bytes, ${file.type})`);
+          console.log(`Created compressed file: ${file.name} (${file.size} bytes, ${file.type})`);
           resolve(file);
         } else {
           reject(new Error('Failed to create blob from canvas'));
@@ -391,17 +411,17 @@ const CameraControls = ({ onControlsChange }) => {
                   
                   // Step 2: Generate preview using the uploaded file (if generate endpoint exists)
                   setSubmitStatus('Processing complete!');
-                  console.log('✅ Screenshot uploaded and preview request created!');
+                  console.log('Screenshot uploaded and preview request created!');
                   
                   // Note: Actual generation will be implemented separately
                   // const generateResponse = await generatePreview(fileId, cameraSettings);
                   // console.log('Preview generation response:', generateResponse.data);
                   
                   // For now, just show upload success
-                  setSubmitStatus('✅ Upload complete!');
+                  setSubmitStatus(renderStatusMessage('Upload complete!', 'success'));
                   setTimeout(() => setSubmitStatus(''), 3000);
                 } catch (error) {
-                  setSubmitStatus('❌ Error occurred');
+                  setSubmitStatus(renderStatusMessage('Error occurred', 'error'));
                   console.error('Failed to generate preview:', error);
                   setTimeout(() => setSubmitStatus(''), 3000);
                 } finally {

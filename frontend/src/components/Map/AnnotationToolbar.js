@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaHandPaper, FaMapPin, FaPen, FaPalette, FaTimes } from 'react-icons/fa';
 
 const AnnotationToolbar = ({ 
   selectedTool, 
@@ -11,9 +12,9 @@ const AnnotationToolbar = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const tools = [
-    { id: 'select', name: 'Select', icon: '🤚' },
-    { id: 'pin', name: 'Pin', icon: '📍' },
-    { id: 'pen', name: 'Pen', icon: '✏️' }
+    { id: 'select', name: 'Select', icon: <FaHandPaper /> },
+    { id: 'pin', name: 'Pin', icon: <FaMapPin /> },
+    { id: 'pen', name: 'Pen', icon: <FaPen /> }
   ];
 
   const colors = [
@@ -56,7 +57,7 @@ const AnnotationToolbar = ({
         }}
         title="Open Annotation Tools"
       >
-        🎨
+        <FaPalette />
       </button>
     );
   }
@@ -105,7 +106,7 @@ const AnnotationToolbar = ({
           }}
           title="Collapse Toolbar"
         >
-          ✕
+          <FaTimes />
         </button>
       </div>
 
