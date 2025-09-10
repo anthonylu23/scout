@@ -27,14 +27,14 @@ def save_binary_file(file_name, data):
     print(f"File saved to to: {file_name}")
 
 
-def generate():
+def generate(screenshot, date, time_of_day, focal_length, weather):
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
     )
 
     model = "gemini-2.5-flash-image-preview"
     from prompt import prompt
-    prompt = prompt.format(date=date, time_of_day=time_of_day, focal_length=focal_length, weather=weather)
+    prompt = prompt.format(screenshot=screenshot, date=date, time_of_day=time_of_day, focal_length=focal_length, weather=weather)
     contents = [
         types.Content(
             role="user",
@@ -73,5 +73,9 @@ def generate():
             print(chunk.text)
 
 if __name__ == "__main__":
-    generate()
+    screenshot = """
+    
+    """
+
+    generate(screenshot, date, time_of_day, focal_length, weather)
 
