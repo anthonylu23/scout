@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import './DatePickerStyles.css';
-import { postPreviewRequest } from './api';
+import '../../styles/DatePickerStyles.css';
+import { uploadScreenshot } from '../../services/api';
 import html2canvas from 'html2canvas';
 
 const CameraControls = ({ onControlsChange }) => {
@@ -12,7 +12,55 @@ const CameraControls = ({ onControlsChange }) => {
   const [weather, setWeather] = useState('clear');
   const [isWeatherDropdownOpen, setIsWeatherDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('');
   const dropdownRef = useRef(null);
+
+  // Frontend screenshot compression and file creation
+  const compressScreenshotToFile = (canvas, maxSize = 800, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const originalWidth = canvas.width;
+      const originalHeight = canvas.height;
+      
+      // Calculate new dimensions while maintaining aspect ratio
+      const ratio = Math.min(maxSize / originalWidth, maxSize / originalHeight);
+      
+      let finalCanvas = canvas;
+      
+      if (ratio < 1) {
+        const newWidth = Math.floor(originalWidth * ratio);
+        const newHeight = Math.floor(originalHeight * ratio);
+        
+        console.log(`Compressing screenshot from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight}`);
+        
+        // Create new canvas for compression
+        const compressedCanvas = document.createElement('canvas');
+        compressedCanvas.width = newWidth;
+        compressedCanvas.height = newHeight;
+        
+        const ctx = compressedCanvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw resized image
+        ctx.drawImage(canvas, 0, 0, newWidth, newHeight);
+        finalCanvas = compressedCanvas;
+      }
+      
+      // Convert canvas to blob file
+      finalCanvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `screenshot-${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          console.log(`✅ Created compressed file: ${file.name} (${file.size} bytes, ${file.type})`);
+          resolve(file);
+        } else {
+          reject(new Error('Failed to create blob from canvas'));
+        }
+      }, 'image/jpeg', quality);
+    });
+  };
 
   const weatherOptions = [
     { value: 'clear', label: 'Clear' },
@@ -267,7 +315,9 @@ const CameraControls = ({ onControlsChange }) => {
               onClick={async () => {
                 try {
                   setIsSubmitting(true);
-                  let screenshot = null;
+                  setSubmitStatus('Capturing screenshot...');
+                  let screenshotFile = null;
+                  
                   try {
                     const container = document.getElementById('map-root');
                     const mapContainer = container ? container.querySelector('.mapboxgl-map') : null;
@@ -308,37 +358,52 @@ const CameraControls = ({ onControlsChange }) => {
                           } catch (_) {}
                         }
                       });
-                      screenshot = canvas.toDataURL('image/png');
+                      
+                      // Convert screenshot to compressed file
+                      setSubmitStatus('Compressing screenshot...');
+                      screenshotFile = await compressScreenshotToFile(canvas, 800, 0.8);
                     }
                   } catch (sErr) {
                     console.error('Screenshot capture failed:', sErr);
+                    return; // Exit early if screenshot capture fails
+                  }
+                  
+                  if (!screenshotFile) {
+                    throw new Error('Failed to capture and compress screenshot');
                   }
 
-                  const payload = {
-                    screenshot,
-                    cameraSettings: {
-                      date: selectedDate.toISOString().split('T')[0],
-                      timeOfDay: String(timeOfDay),
-                      focalLength: focalLength,
-                      weather: weather
-                    }
+                  // Prepare camera settings
+                  const cameraSettings = {
+                    date: selectedDate.toISOString().split('T')[0],
+                    timeOfDay: String(timeOfDay),
+                    focalLength: focalLength,
+                    weather: weather
                   };
-                  const response = await postPreviewRequest(payload);
-                  console.log('Preview request sent:', response.data);
-                  if (screenshot) {
-                    try {
-                      const a = document.createElement('a');
-                      a.href = screenshot;
-                      a.download = `scout-preview-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-                      document.body.appendChild(a);
-                      a.click();
-                      a.remove();
-                    } catch (dErr) {
-                      console.warn('Screenshot download failed:', dErr);
-                    }
-                  }
+                  
+                  // Step 1: Upload the compressed screenshot file with camera settings
+                  setSubmitStatus('Uploading screenshot...');
+                  console.log('Uploading screenshot file...', screenshotFile.name, screenshotFile.size, 'bytes');
+                  console.log('Camera settings:', cameraSettings);
+                  const uploadResponse = await uploadScreenshot(screenshotFile, cameraSettings);
+                  const fileId = uploadResponse.data.file_id;
+                  console.log('File uploaded with ID:', fileId);
+                  console.log('Upload response:', uploadResponse.data.message);
+                  
+                  // Step 2: Generate preview using the uploaded file (if generate endpoint exists)
+                  setSubmitStatus('Processing complete!');
+                  console.log('✅ Screenshot uploaded and preview request created!');
+                  
+                  // Note: Actual generation will be implemented separately
+                  // const generateResponse = await generatePreview(fileId, cameraSettings);
+                  // console.log('Preview generation response:', generateResponse.data);
+                  
+                  // For now, just show upload success
+                  setSubmitStatus('✅ Upload complete!');
+                  setTimeout(() => setSubmitStatus(''), 3000);
                 } catch (error) {
-                  console.error('Failed to send preview request:', error);
+                  setSubmitStatus('❌ Error occurred');
+                  console.error('Failed to generate preview:', error);
+                  setTimeout(() => setSubmitStatus(''), 3000);
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -372,7 +437,7 @@ const CameraControls = ({ onControlsChange }) => {
               }}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Sending…' : 'Preview'}
+              {isSubmitting ? (submitStatus || 'Processing...') : 'Preview'}
             </button>
           </div>
         </div>

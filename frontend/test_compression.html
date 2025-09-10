@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Compression Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .results { background: #f8f9fa; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Screenshot Compression Test</h1>
+    
+    <div class="test-section">
+        <h3>Original Canvas (Large)</h3>
+        <canvas id="originalCanvas" width="1600" height="1200"></canvas>
+        <button onclick="drawTestImage()">Draw Test Image</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Compressed Result</h3>
+        <canvas id="compressedCanvas"></canvas>
+        <button onclick="testCompression()">Test Compression</button>
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        // Frontend screenshot compression function (same as in CameraControls.js)
+        const compressScreenshot = (canvas, maxSize = 800, quality = 0.8) => {
+            return new Promise((resolve) => {
+                const originalWidth = canvas.width;
+                const originalHeight = canvas.height;
+                
+                // Calculate new dimensions while maintaining aspect ratio
+                const ratio = Math.min(maxSize / originalWidth, maxSize / originalHeight);
+                
+                if (ratio >= 1) {
+                    // No compression needed
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                    return;
+                }
+                
+                const newWidth = Math.floor(originalWidth * ratio);
+                const newHeight = Math.floor(originalHeight * ratio);
+                
+                console.log(`Compressing screenshot from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight}`);
+                
+                // Create new canvas for compression
+                const compressedCanvas = document.createElement('canvas');
+                compressedCanvas.width = newWidth;
+                compressedCanvas.height = newHeight;
+                
+                const ctx = compressedCanvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                
+                // Draw resized image
+                ctx.drawImage(canvas, 0, 0, newWidth, newHeight);
+                
+                // Convert to compressed JPEG
+                const compressedDataUrl = compressedCanvas.toDataURL('image/jpeg', quality);
+                
+                console.log(`Screenshot compressed from ${canvas.toDataURL('image/png').length} to ${compressedDataUrl.length} characters`);
+                
+                resolve(compressedDataUrl);
+            });
+        };
+
+        function drawTestImage() {
+            const canvas = document.getElementById('originalCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw a map-like test image
+            ctx.fillStyle = '#4a90e2';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some "roads"
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            for (let i = 0; i < canvas.width; i += 200) {
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + 100, canvas.height);
+            }
+            for (let j = 0; j < canvas.height; j += 150) {
+                ctx.moveTo(0, j);
+                ctx.lineTo(canvas.width, j + 75);
+            }
+            ctx.stroke();
+            
+            // Add some "buildings"
+            ctx.fillStyle = '#8b4513';
+            for (let x = 50; x < canvas.width; x += 300) {
+                for (let y = 50; y < canvas.height; y += 250) {
+                    ctx.fillRect(x, y, 80, 60);
+                }
+            }
+            
+            // Add text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '24px Arial';
+            ctx.fillText('Test Map Screenshot', 50, 50);
+            ctx.fillText(`${canvas.width} x ${canvas.height}`, 50, 80);
+        }
+
+        async function testCompression() {
+            const originalCanvas = document.getElementById('originalCanvas');
+            const compressedCanvas = document.getElementById('compressedCanvas');
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Test compression
+                const compressedDataUrl = await compressScreenshot(originalCanvas, 800, 0.8);
+                
+                // Display compressed image
+                const img = new Image();
+                img.onload = () => {
+                    compressedCanvas.width = img.width;
+                    compressedCanvas.height = img.height;
+                    const ctx = compressedCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Show results
+                    const originalSize = originalCanvas.toDataURL('image/png').length;
+                    const compressedSize = compressedDataUrl.length;
+                    const ratio = (compressedSize / originalSize * 100).toFixed(1);
+                    
+                    resultsDiv.innerHTML = `
+                        <h4>Compression Results:</h4>
+                        <p><strong>Original:</strong> ${originalCanvas.width}x${originalCanvas.height} → ${originalSize.toLocaleString()} characters (PNG)</p>
+                        <p><strong>Compressed:</strong> ${img.width}x${img.height} → ${compressedSize.toLocaleString()} characters (JPEG)</p>
+                        <p><strong>Compression Ratio:</strong> ${ratio}% of original size</p>
+                        <p><strong>Size Reduction:</strong> ${(100 - ratio).toFixed(1)}%</p>
+                        <p style="color: ${compressedSize < 100000 ? 'green' : 'orange'};">
+                            <strong>Status:</strong> ${compressedSize < 100000 ? '✅ Good for API' : '⚠️ Still large'}
+                        </p>
+                    `;
+                };
+                img.src = compressedDataUrl;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Draw initial test image
+        drawTestImage();
+    </script>
+</body>
+</html>

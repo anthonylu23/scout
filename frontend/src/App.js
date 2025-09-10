@@ -1,6 +1,6 @@
 import React from 'react';
-import Navbar from './Navbar';
-import MapView from './MapView';
+import { Navbar, MapView } from './components';
+import './styles';
 
 function App() {
   return (

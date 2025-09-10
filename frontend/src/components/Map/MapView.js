@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Map from 'react-map-gl';
-import CameraControls from './CameraControls';
+import CameraControls from '../Camera/CameraControls';
 import AnnotationToolbar from './AnnotationToolbar';
 
 const MapView = () => {
