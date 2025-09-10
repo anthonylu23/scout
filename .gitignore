@@ -5,3 +5,7 @@ node_modules
 README.md
 
 PROJECT_PLAN.md
+
+.claude
+
+.env.example
