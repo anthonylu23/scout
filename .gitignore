@@ -8,4 +8,4 @@ PROJECT_PLAN.md
 
 .claude
 
-.env.example
+backend/.env.example
