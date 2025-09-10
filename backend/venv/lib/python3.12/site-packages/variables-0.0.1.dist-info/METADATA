@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: variables
+Version: 0.0.1
+Summary: variables
+Home-page: https://gitlab.com/qwolphin/variables
+Author: Wolphin
+Author-email: q@wolph.in
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Typing :: Typed
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+
+UNKNOWN
+
