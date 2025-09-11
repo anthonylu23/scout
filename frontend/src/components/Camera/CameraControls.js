@@ -36,8 +36,8 @@ const CameraControls = ({ onControlsChange }) => {
   const dropdownRef = useRef(null);
 
   // Frontend screenshot compression and file creation
-  const compressScreenshotToFile = (canvas, maxSize = 800, quality = 0.8) => {
-    return new Promise((resolve) => {
+  const compressScreenshotToFile = (canvas, maxSize = 800, quality = 0.9) => {
+    return new Promise((resolve, reject) => {
       const originalWidth = canvas.width;
       const originalHeight = canvas.height;
       
@@ -58,6 +58,10 @@ const CameraControls = ({ onControlsChange }) => {
         compressedCanvas.height = newHeight;
         
         const ctx = compressedCanvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas 2d context'));
+          return;
+        }
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         
@@ -348,14 +352,21 @@ const CameraControls = ({ onControlsChange }) => {
                       let mapDataUrl = null;
                       try {
                         if (mapCanvas) {
+                          // Test if canvas is tainted by CORS
+                          mapCanvas.getImageData(0, 0, 1, 1);
                           mapDataUrl = mapCanvas.toDataURL('image/png');
                         }
-                      } catch (_) {}
+                      } catch (corsError) {
+                        console.warn('Canvas is tainted by CORS, proceeding without map replacement:', corsError.message);
+                      }
 
                       const canvas = await html2canvas(container, {
                         useCORS: true,
+                        allowTaint: false,
                         backgroundColor: '#ffffff',
-                        scale: window.devicePixelRatio || 1,
+                        scale: Math.min(window.devicePixelRatio || 1, 2), // Limit scale to prevent memory issues
+                        logging: false,
+                        imageTimeout: 30000,
                         onclone: (clonedDoc) => {
                           // Hide UI panels in cloned DOM
                           clonedDoc.querySelectorAll('[data-ui]').forEach((el) => {
@@ -379,17 +390,27 @@ const CameraControls = ({ onControlsChange }) => {
                         }
                       });
                       
+                      // Validate canvas before compression
+                      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                        throw new Error('Invalid canvas generated from screenshot');
+                      }
+                      
                       // Convert screenshot to compressed file
                       setSubmitStatus('Compressing screenshot...');
-                      screenshotFile = await compressScreenshotToFile(canvas, 800, 0.8);
+                      screenshotFile = await compressScreenshotToFile(canvas, 800, 0.9);
                     }
                   } catch (sErr) {
                     console.error('Screenshot capture failed:', sErr);
                     return; // Exit early if screenshot capture fails
                   }
                   
-                  if (!screenshotFile) {
-                    throw new Error('Failed to capture and compress screenshot');
+                  if (!screenshotFile || screenshotFile.size === 0) {
+                    throw new Error('Failed to capture and compress screenshot - file is empty or invalid');
+                  }
+                  
+                  // Validate file type
+                  if (!screenshotFile.type || !screenshotFile.type.startsWith('image/')) {
+                    throw new Error('Invalid file type generated');
                   }
 
                   // Prepare camera settings

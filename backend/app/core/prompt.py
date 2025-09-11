@@ -14,4 +14,4 @@ Please create a high-quality, realistic image that:
 - Maintains geographic accuracy to the mapped location
 - Includes appropriate seasonal elements for the date
 
-Generate a photorealistic image that a photographer would capture at this exact location with these camera settings."""
+Generate a photorealistic image that a photographer would capture at this exact location with these camera settings. Also generate a short title/filename for this image."""
