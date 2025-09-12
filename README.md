@@ -122,22 +122,6 @@ The backend automatically generates API documentation available at:
 - `GET /generated-images/{id}` - Retrieve generated images
 - `GET /health` - Health check endpoint
 
-## Architecture
-
-### Frontend Architecture
-
-- **Component-Based**: Modular React components with clear separation of concerns
-- **Custom Hooks**: Reusable logic for error handling and state management
-- **Utility Functions**: Centralized utility functions for formatting and validation
-- **Constants**: Configuration constants for maintainable code
-
-### Backend Architecture
-
-- **Modular Routers**: API routes organized by feature area
-- **Service Layer**: Business logic separated from route handlers
-- **Data Models**: Pydantic models for request/response validation
-- **Logging**: Structured logging for debugging and monitoring
-
 ## Environment Variables
 
 ### Frontend (.env)
