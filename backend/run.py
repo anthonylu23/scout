@@ -13,5 +13,7 @@ if __name__ == "__main__":
     print("   - DELETE /preview-requests/{id} - Delete preview request")
     print("   - GET  /generated-images - List generated images")
     print("   - GET  /generated-images/{id} - Retrieve generated image")
+    print("   - GET  /generated-images/{id}/details - Get image details with description")
+    print("   - GET  /generated-images/{id}/info - Get debug info about image data")
     print("   - DELETE /generated-images/{id} - Delete generated image")
     uvicorn.run(app, host="0.0.0.0", port=8000)

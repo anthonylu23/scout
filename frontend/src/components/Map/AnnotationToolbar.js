@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaHandPaper, FaMapPin, FaPen, FaPalette, FaTimes } from 'react-icons/fa';
+import { ANNOTATION_CONFIG } from '../../utils/constants';
 
 const AnnotationToolbar = ({ 
   selectedTool, 
@@ -17,16 +18,7 @@ const AnnotationToolbar = ({
     { id: 'pen', name: 'Pen', icon: <FaPen /> }
   ];
 
-  const colors = [
-    '#007bff', // Blue
-    '#dc3545', // Red
-    '#28a745', // Green
-    '#ffc107', // Yellow
-    '#6f42c1', // Purple
-    '#fd7e14', // Orange
-    '#20c997', // Teal
-    '#333333'  // Black
-  ];
+  const colors = ANNOTATION_CONFIG.COLORS;
 
   const getSizeLabel = (value) => {
     if (value <= 16) return 'Small';
@@ -195,8 +187,8 @@ const AnnotationToolbar = ({
         </div>
         <input
           type="range"
-          min="12"
-          max="32"
+          min={ANNOTATION_CONFIG.SIZE_RANGE.MIN}
+          max={ANNOTATION_CONFIG.SIZE_RANGE.MAX}
           value={markerSize}
           onChange={(e) => onMarkerSizeChange(parseInt(e.target.value))}
           style={{
@@ -215,8 +207,8 @@ const AnnotationToolbar = ({
           color: '#666',
           marginTop: '4px'
         }}>
-          <span>12px</span>
-          <span>32px</span>
+          <span>{ANNOTATION_CONFIG.SIZE_RANGE.MIN}px</span>
+          <span>{ANNOTATION_CONFIG.SIZE_RANGE.MAX}px</span>
         </div>
       </div>
 

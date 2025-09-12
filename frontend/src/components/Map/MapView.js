@@ -3,12 +3,15 @@ import Map from 'react-map-gl';
 import { FaSearch } from 'react-icons/fa';
 import CameraControls from '../Camera/CameraControls';
 import AnnotationToolbar from './AnnotationToolbar';
+import GeneratedImagePopup from '../UI/GeneratedImagePopup';
+import { MAP_CONFIG, ANNOTATION_CONFIG } from '../../utils/constants';
+import { formatCoordinates } from '../../utils/formatting';
 
 const MapView = () => {
   const [viewState, setViewState] = useState({
     longitude: 0,
     latitude: 0,
-    zoom: 0.5
+    zoom: MAP_CONFIG.DEFAULT_ZOOM
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState(null);
@@ -16,8 +19,10 @@ const MapView = () => {
   const [cameraSettings, setCameraSettings] = useState(null);
   const [mouseCoords, setMouseCoords] = useState(null);
   const [selectedTool, setSelectedTool] = useState('select');
-  const [selectedColor, setSelectedColor] = useState('#007bff');
-  const [markerSize, setMarkerSize] = useState(20);
+  const [selectedColor, setSelectedColor] = useState(ANNOTATION_CONFIG.DEFAULT_COLOR);
+  const [markerSize, setMarkerSize] = useState(ANNOTATION_CONFIG.DEFAULT_SIZE);
+  const [showGeneratedImagePopup, setShowGeneratedImagePopup] = useState(false);
+  const [generatedImageData, setGeneratedImageData] = useState(null);
   const [annotations, setAnnotations] = useState(() => {
     const saved = localStorage.getItem('scout-annotations');
     return saved ? JSON.parse(saved) : [];
@@ -43,7 +48,7 @@ const MapView = () => {
         setViewState({
           longitude,
           latitude,
-          zoom: 12
+          zoom: MAP_CONFIG.SEARCH_RESULT_ZOOM
         });
         setSearchResult({
           longitude,
@@ -66,6 +71,11 @@ const MapView = () => {
   const handleCameraControlsChange = useCallback((settings) => {
     setCameraSettings(settings);
     console.log('Camera Controls:', settings);
+  }, []);
+
+  const handleGeneratedImageReady = useCallback((imageData) => {
+    setGeneratedImageData(imageData);
+    setShowGeneratedImagePopup(true);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -199,7 +209,7 @@ const MapView = () => {
           setViewState({
             longitude: position.coords.longitude,
             latitude: position.coords.latitude,
-            zoom: 12
+            zoom: MAP_CONFIG.USER_LOCATION_ZOOM
           });
         },
         (error) => {
@@ -276,7 +286,7 @@ const MapView = () => {
             borderTop: '1px solid #e0e0e0',
             paddingTop: '8px'
           }}>
-            ({mouseCoords.latitude}, {mouseCoords.longitude})
+            {formatCoordinates(mouseCoords.longitude, mouseCoords.latitude)}
           </div>
         )}
       </div>
@@ -301,8 +311,8 @@ const MapView = () => {
         keyboard={false}
         cursor={selectedTool === 'select' ? 'grab' : 'pointer'}
         dragPan={selectedTool === 'select'}
-        minZoom={0.5}
-        maxZoom={20}
+        minZoom={MAP_CONFIG.MIN_ZOOM}
+        maxZoom={MAP_CONFIG.MAX_ZOOM}
       >
       </Map>
 
@@ -465,7 +475,10 @@ const MapView = () => {
           }}
           onWheel={(e) => e.stopPropagation()}
         >
-          <CameraControls onControlsChange={handleCameraControlsChange} />
+          <CameraControls 
+            onControlsChange={handleCameraControlsChange} 
+            onGeneratedImageReady={handleGeneratedImageReady}
+          />
         </div>
       </div>
 
@@ -479,6 +492,17 @@ const MapView = () => {
         onMarkerSizeChange={handleMarkerSizeChange}
       />
 
+      {/* Generated Image Popup - positioned over the map */}
+      <GeneratedImagePopup
+        isOpen={showGeneratedImagePopup}
+        onClose={() => {
+          setShowGeneratedImagePopup(false);
+          setGeneratedImageData(null);
+        }}
+        imageUrl={generatedImageData?.imageUrl}
+        description={generatedImageData?.description}
+        imageId={generatedImageData?.imageId}
+      />
 
     </div>
   );

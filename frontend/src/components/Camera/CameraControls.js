@@ -3,10 +3,10 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../styles/DatePickerStyles.css';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { uploadScreenshot } from '../../services/api';
+import { uploadScreenshot, getPreviewRequests, getGeneratedImageUrl } from '../../services/api';
 import html2canvas from 'html2canvas';
 
-const CameraControls = ({ onControlsChange }) => {
+const CameraControls = ({ onControlsChange, onGeneratedImageReady }) => {
   const [timeOfDay, setTimeOfDay] = useState(12); // 24-hour format
   const [selectedDate, setSelectedDate] = useState(new Date());
   
@@ -33,7 +33,107 @@ const CameraControls = ({ onControlsChange }) => {
   const [isWeatherDropdownOpen, setIsWeatherDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('');
+  const [showGeneratedImagePopup, setShowGeneratedImagePopup] = useState(false);
+  const [generatedImageData, setGeneratedImageData] = useState(null);
+  const [currentRequestIndex, setCurrentRequestIndex] = useState(null);
   const dropdownRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Poll for generation completion
+  const pollForGenerationCompletion = async (requestIndex) => {
+    const maxAttempts = 60; // Poll for up to 2 minutes (60 * 2s intervals)
+    let attempts = 0;
+    
+    const poll = async () => {
+      try {
+        attempts++;
+        const response = await getPreviewRequests();
+        const requests = response.data.preview_requests;
+        
+        if (requests && requests[requestIndex]) {
+          const request = requests[requestIndex];
+          
+          if (request.generation_status === 'completed' && request.generated_image_id) {
+            // Generation completed successfully
+            const imageUrl = getGeneratedImageUrl(request.generated_image_id);
+            console.log('Generation completed! Request data:', request);
+            console.log('Generated image URL:', imageUrl);
+            
+            const imageData = {
+              imageUrl,
+              description: request.generated_description,
+              imageId: request.generated_image_id
+            };
+            console.log('Setting generated image data:', imageData);
+            setGeneratedImageData(imageData);
+            setShowGeneratedImagePopup(true);
+            
+            // Pass data to parent component
+            if (onGeneratedImageReady) {
+              onGeneratedImageReady(imageData);
+            }
+            setSubmitStatus(renderStatusMessage('Generation complete!', 'success'));
+            
+            // Clear polling
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            setCurrentRequestIndex(null);
+            setTimeout(() => setSubmitStatus(''), 3000);
+            return;
+          } else if (request.generation_status === 'failed') {
+            // Generation failed
+            setSubmitStatus(renderStatusMessage('Generation failed', 'error'));
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            setCurrentRequestIndex(null);
+            setTimeout(() => setSubmitStatus(''), 3000);
+            return;
+          }
+        }
+        
+        // Continue polling if not completed and haven't exceeded max attempts
+        if (attempts >= maxAttempts) {
+          setSubmitStatus(renderStatusMessage('Generation timeout', 'error'));
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setCurrentRequestIndex(null);
+          setTimeout(() => setSubmitStatus(''), 3000);
+        }
+      } catch (error) {
+        console.error('Error polling for generation completion:', error);
+        if (attempts >= maxAttempts) {
+          setSubmitStatus(renderStatusMessage('Polling error', 'error'));
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setCurrentRequestIndex(null);
+          setTimeout(() => setSubmitStatus(''), 3000);
+        }
+      }
+    };
+    
+    // Start polling every 2 seconds
+    pollingIntervalRef.current = setInterval(poll, 2000);
+    // Also poll immediately
+    poll();
+  };
 
   // Frontend screenshot compression and file creation
   const compressScreenshotToFile = (canvas, maxSize = 800, quality = 0.9) => {
@@ -339,7 +439,7 @@ const CameraControls = ({ onControlsChange }) => {
               onClick={async () => {
                 try {
                   setIsSubmitting(true);
-                  setSubmitStatus('Capturing screenshot...');
+                  setSubmitStatus('Capturing info...');
                   let screenshotFile = null;
                   
                   try {
@@ -422,7 +522,7 @@ const CameraControls = ({ onControlsChange }) => {
                   };
                   
                   // Step 1: Upload the compressed screenshot file with camera settings
-                  setSubmitStatus('Uploading screenshot...');
+                  setSubmitStatus('loading...');
                   console.log('Uploading screenshot file...', screenshotFile.name, screenshotFile.size, 'bytes');
                   console.log('Camera settings:', cameraSettings);
                   const uploadResponse = await uploadScreenshot(screenshotFile, cameraSettings);
@@ -430,17 +530,18 @@ const CameraControls = ({ onControlsChange }) => {
                   console.log('File uploaded with ID:', fileId);
                   console.log('Upload response:', uploadResponse.data.message);
                   
-                  // Step 2: Generate preview using the uploaded file (if generate endpoint exists)
-                  setSubmitStatus('Processing complete!');
+                  // Step 2: Start polling for generation completion
+                  setSubmitStatus('Generating image...');
                   console.log('Screenshot uploaded and preview request created!');
                   
-                  // Note: Actual generation will be implemented separately
-                  // const generateResponse = await generatePreview(fileId, cameraSettings);
-                  // console.log('Preview generation response:', generateResponse.data);
+                  // Start polling for the generation completion
+                  // The request index is the last item in the preview_requests array
+                  const requestsResponse = await getPreviewRequests();
+                  const requestIndex = requestsResponse.data.preview_requests.length - 1;
+                  setCurrentRequestIndex(requestIndex);
                   
-                  // For now, just show upload success
-                  setSubmitStatus(renderStatusMessage('Upload complete!', 'success'));
-                  setTimeout(() => setSubmitStatus(''), 3000);
+                  console.log(`Starting polling for request index: ${requestIndex}`);
+                  pollForGenerationCompletion(requestIndex);
                 } catch (error) {
                   setSubmitStatus(renderStatusMessage('Error occurred', 'error'));
                   console.error('Failed to generate preview:', error);
@@ -484,6 +585,7 @@ const CameraControls = ({ onControlsChange }) => {
         </div>
 
       </div>
+      
     </div>
   );
 };

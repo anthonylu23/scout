@@ -22,7 +22,7 @@ export const uploadScreenshot = async (file, cameraSettings = null) => {
         formData.append('weather', cameraSettings.weather);
     }
     
-    return API_URL.post('/upload-screenshot', formData, {
+    return API_URL.post('/files/upload', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -38,9 +38,27 @@ export const generatePreview = async (fileId, cameraSettings, coordinates = null
 };
 
 export const getUploadedFiles = async () => {
-    return API_URL.get('/uploaded-files');
+    return API_URL.get('/files');
 };
 
 export const deleteUploadedFile = async (fileId) => {
-    return API_URL.delete(`/uploaded-files/${fileId}`);
+    return API_URL.delete(`/files/${fileId}`);
+};
+
+// Generated images API
+export const getGeneratedImages = async () => {
+    return API_URL.get('/generated-images');
+};
+
+export const getGeneratedImageDetails = async (generatedImageId) => {
+    return API_URL.get(`/generated-images/${generatedImageId}/details`);
+};
+
+export const getGeneratedImageUrl = (generatedImageId) => {
+    return `http://localhost:8000/generated-images/${generatedImageId}`;
+};
+
+// Preview requests API
+export const getPreviewRequests = async () => {
+    return API_URL.get('/preview-requests');
 };
