@@ -1,3 +1,4 @@
+import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,8 @@ from .core.logging import log_info
 app = FastAPI(title="Scout Backend", version="1.0.0")
 
 # CORS middleware
-origins = ["http://localhost:3000"]
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+origins = [origin.strip() for origin in allowed_origins]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
