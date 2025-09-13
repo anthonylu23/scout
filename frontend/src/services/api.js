@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const API_URL = axios.create({
     baseURL: API_BASE_URL,
 });
@@ -56,7 +56,7 @@ export const getGeneratedImageDetails = async (generatedImageId) => {
 };
 
 export const getGeneratedImageUrl = (generatedImageId) => {
-    return `http://localhost:8000/generated-images/${generatedImageId}`;
+    return `${API_BASE_URL}/generated-images/${generatedImageId}`;
 };
 
 // Preview requests API
