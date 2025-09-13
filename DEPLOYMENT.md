@@ -55,6 +55,12 @@ API endpoints test: `curl http://localhost:8000/preview-requests/`
    - Start Command: `python run.py`
    - Root Directory: `backend`
 
+2. **Alternative Configuration (if above doesn't work):**
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn main:application -w 4 -k uvicorn.workers.UvicornWorker`
+   - Root Directory: `backend`
+   - Add to requirements.txt: `gunicorn`
+
 2. **Environment Variables:**
    ```
    GEMINI_API_KEY=your_gemini_api_key_here

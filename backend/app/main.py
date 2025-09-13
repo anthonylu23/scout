@@ -8,6 +8,21 @@ from .core.logging import log_info
 
 app = FastAPI(title="Scout Backend", version="1.0.0")
 
+# Root endpoint for health checks and deployment verification
+@app.get("/")
+async def root():
+    """Root endpoint - returns basic API information"""
+    return {
+        "message": "Scout Backend API",
+        "version": "1.0.0",
+        "status": "healthy",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "redoc": "/redoc"
+        }
+    }
+
 # CORS middleware with robust configuration
 def get_allowed_origins():
     # Get origins from environment variable
