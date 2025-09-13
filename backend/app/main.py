@@ -8,14 +8,35 @@ from .core.logging import log_info
 
 app = FastAPI(title="Scout Backend", version="1.0.0")
 
-# CORS middleware
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
-origins = [origin.strip() for origin in allowed_origins]
+# CORS middleware with robust configuration
+def get_allowed_origins():
+    # Get origins from environment variable
+    env_origins = os.getenv("ALLOWED_ORIGINS", "")
+
+    # Default origins for development and production
+    default_origins = [
+        "http://localhost:3000",  # Local development frontend
+        "https://scout-frontend.vercel.app",  # Production frontend
+        "https://scout-np2t.onrender.com",  # Production API
+    ]
+
+    if env_origins:
+        # Split and clean environment origins
+        origins = [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+        # Combine with defaults (avoid duplicates)
+        all_origins = list(set(origins + default_origins))
+    else:
+        all_origins = default_origins
+
+    log_info(f"CORS allowed origins: {all_origins}")
+    return all_origins
+
+origins = get_allowed_origins()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

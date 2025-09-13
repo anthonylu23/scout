@@ -1,5 +1,21 @@
-// API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// API Configuration with robust fallback logic
+const getApiBaseUrl = () => {
+  // Primary: Use environment variable
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // Fallback: Detect if running in development or production
+  if (process.env.NODE_ENV === 'production') {
+    // Production fallback
+    return 'https://scout-np2t.onrender.com';
+  }
+
+  // Development fallback
+  return 'http://localhost:8000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 // Map Configuration
 export const MAP_CONFIG = {
