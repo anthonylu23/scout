@@ -17,8 +17,8 @@ class ImageGenerationService:
     
         
     async def generate_image_from_screenshot(
-        self, 
-        image_data: bytes, 
+        self,
+        image_data: bytes,
         camera_settings: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
@@ -27,9 +27,97 @@ class ImageGenerationService:
         """
         try:
             log_info(f"Starting image generation with model: {self.model}")
-            
-            # Convert bytes to PIL Image
-            image = Image.open(BytesIO(image_data))
+
+            # Debug and validate image data before processing
+            if not image_data:
+                log_error("Image data is empty or None")
+                return {
+                    "success": False,
+                    "error": "invalid_image_data",
+                    "message": "No image data provided"
+                }
+
+            # Log image data characteristics
+            log_info(f"Image data type: {type(image_data)}")
+            log_info(f"Image data size: {len(image_data)} bytes")
+
+            # Check if data starts with common image file headers
+            if len(image_data) >= 4:
+                header = image_data[:4]
+                if header.startswith(b'\xff\xd8\xff'):
+                    log_info("Detected JPEG image format")
+                elif header.startswith(b'\x89PNG'):
+                    log_info("Detected PNG image format")
+                elif header.startswith(b'GIF8'):
+                    log_info("Detected GIF image format")
+                elif header.startswith(b'RIFF'):
+                    log_info("Detected WebP image format")
+                else:
+                    log_warning(f"Unknown image format. Header: {header.hex()}")
+
+            # Convert bytes to PIL Image with enhanced error handling
+            try:
+                # Try different approaches to handle potential encoding issues
+                image_buffer = BytesIO(image_data)
+
+                # First attempt: Direct PIL opening
+                try:
+                    image = Image.open(image_buffer)
+                    # Verify the image can be loaded
+                    image.verify()
+                    # Re-open for actual use (verify() closes the image)
+                    image_buffer.seek(0)
+                    image = Image.open(image_buffer)
+                    log_info(f"Successfully opened image: {image.format} {image.size} {image.mode}")
+                except Exception as direct_error:
+                    log_warning(f"Direct PIL opening failed: {direct_error}")
+
+                    # Second attempt: Handle potential base64 encoding issues
+                    try:
+                        import base64
+                        # Check if data might be base64 encoded (common in some deployment environments)
+                        if isinstance(image_data, str):
+                            decoded_data = base64.b64decode(image_data)
+                        elif isinstance(image_data, bytes) and image_data.startswith(b'data:image'):
+                            # Handle data URLs
+                            header, encoded = image_data.split(b',', 1)
+                            decoded_data = base64.b64decode(encoded)
+                        else:
+                            # Try to decode bytes as base64 in case of double encoding
+                            decoded_data = base64.b64decode(image_data)
+
+                        log_info(f"Attempting base64 decode, original size: {len(image_data)}, decoded size: {len(decoded_data)}")
+
+                        image_buffer = BytesIO(decoded_data)
+                        image = Image.open(image_buffer)
+                        image.verify()
+                        image_buffer.seek(0)
+                        image = Image.open(image_buffer)
+                        log_info(f"Successfully opened base64 decoded image: {image.format} {image.size} {image.mode}")
+
+                    except Exception as base64_error:
+                        log_warning(f"Base64 decode attempt failed: {base64_error}")
+                        # Re-raise the original error
+                        raise direct_error
+
+            except Exception as img_error:
+                log_error(f"Failed to open image with PIL: {img_error}")
+                # Try to save raw data for debugging
+                import tempfile
+                import os
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.debug') as tmp:
+                        tmp.write(image_data)
+                        debug_path = tmp.name
+                    log_info(f"Raw image data saved to: {debug_path}")
+                except Exception as debug_error:
+                    log_warning(f"Could not save debug data: {debug_error}")
+
+                return {
+                    "success": False,
+                    "error": "invalid_image_format",
+                    "message": f"Cannot process image data: {str(img_error)}"
+                }
             
             # Format the prompt with camera settings
             formatted_prompt = prompt.format(

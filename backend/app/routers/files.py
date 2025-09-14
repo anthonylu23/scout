@@ -29,10 +29,35 @@ async def upload_screenshot(
         # Generate unique file ID
         file_id = str(uuid.uuid4())
         
-        # Read file content
+        # Read file content with debugging
         file_content = await file.read()
         file_size = len(file_content)
-        
+
+        # Debug file content
+        log_info(f"File upload debug - Name: {file.filename}")
+        log_info(f"File upload debug - Content type: {file.content_type}")
+        log_info(f"File upload debug - Size: {file_size} bytes")
+        log_info(f"File upload debug - Content type: {type(file_content)}")
+
+        # Validate file content is not empty
+        if not file_content or file_size == 0:
+            log_error("Uploaded file is empty")
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        # Check file header for image format validation
+        if len(file_content) >= 4:
+            header = file_content[:4]
+            if header.startswith(b'\xff\xd8\xff'):
+                log_info("Upload detected JPEG format")
+            elif header.startswith(b'\x89PNG'):
+                log_info("Upload detected PNG format")
+            elif header.startswith(b'GIF8'):
+                log_info("Upload detected GIF format")
+            elif header.startswith(b'RIFF'):
+                log_info("Upload detected WebP format")
+            else:
+                log_warning(f"Upload unknown image format. Header: {header.hex()}")
+
         # Store in memory database
         memory_db["uploaded_files"][file_id] = {
             "filename": file.filename,
